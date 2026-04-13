@@ -210,12 +210,12 @@ public class ConnectionTestGuardService {
 
   private void validateTarget(DataSourceType type, ResolvedTarget target) {
     String host = target.descriptor().host().toLowerCase();
-    if ("localhost".equals(host) || host.endsWith(".local")) {
-      throw new IllegalArgumentException("Localhost or .local targets are not allowed for " + type);
-    }
-
     if (matchesAllowlist(host, target.addresses())) {
       return;
+    }
+
+    if ("localhost".equals(host) || host.endsWith(".local")) {
+      throw new IllegalArgumentException("Localhost or .local targets are not allowed for " + type);
     }
 
     for (InetAddress address : target.addresses()) {

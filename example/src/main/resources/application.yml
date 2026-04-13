@@ -107,9 +107,17 @@ data-source:
   security:
     allowlist:
       public-only: true
-      exact-hosts: []
+      exact-hosts:
+        - localhost
+        - 127.0.0.1
+        - ::1
+        - 192.168.1.23
       domain-suffixes: []
-      cidr-blocks: []
+      cidr-blocks:
+        - 127.0.0.0/8
+        - 10.0.0.0/8
+        - 172.16.0.0/12
+        - 192.168.0.0/16
     rate-limit:
       window-seconds: 300
       max-requests-per-client-ip: 20

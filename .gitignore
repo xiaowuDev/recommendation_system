@@ -22,9 +22,15 @@ target/
 ehthumbs.db
 Thumbs.db
 
+node_modules/
+dist/
 # Logs
 *.log
 logs/
+
+.claude/
+
+package/
 
 # Runtime data
 pids

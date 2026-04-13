@@ -1,0 +1,46 @@
+:root {
+  --color-bg: #07111a;
+  --color-bg-deep: #040b12;
+  --color-bg-card: rgba(12, 24, 36, 0.78);
+  --color-bg-card-strong: rgba(13, 27, 41, 0.92);
+  --color-bg-input: rgba(18, 33, 49, 0.88);
+  --color-bg-hover: rgba(27, 45, 66, 0.96);
+  --color-bg-soft: rgba(255, 255, 255, 0.03);
+  --color-border: rgba(160, 186, 209, 0.16);
+  --color-border-strong: rgba(225, 191, 120, 0.34);
+  --color-border-focus: rgba(225, 191, 120, 0.7);
+  --color-text: #f6efe6;
+  --color-text-secondary: #bfd0dc;
+  --color-text-muted: #71879a;
+  --color-primary: #e1bf78;
+  --color-primary-hover: #f1d7a5;
+  --color-primary-soft: rgba(225, 191, 120, 0.14);
+  --color-success: #5fd09d;
+  --color-error: #ff7b7b;
+  --color-warning: #ffc173;
+  --color-info: #7bcfff;
+
+  --color-kafka: #f28a5d;
+  --color-mysql: #6abed7;
+  --color-redis: #ff816e;
+  --color-excel: #76d39c;
+
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+
+  --font-mono: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace;
+  --font-sans: 'Aptos', 'Segoe UI Variable Text', 'Segoe UI', 'Trebuchet MS', sans-serif;
+  --font-display: 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
+
+  --shadow-sm: 0 12px 30px rgba(0, 0, 0, 0.18);
+  --shadow-md: 0 18px 48px rgba(0, 0, 0, 0.26);
+  --shadow-lg: 0 30px 80px rgba(0, 0, 0, 0.34);
+  --shadow-glow: 0 0 0 1px rgba(225, 191, 120, 0.08), 0 18px 48px rgba(225, 191, 120, 0.08);
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-smooth: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --duration-fast: 180ms;
+  --duration-normal: 320ms;
+}
