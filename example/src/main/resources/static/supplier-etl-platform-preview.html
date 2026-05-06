@@ -538,6 +538,7 @@
                           </p>
                         </div>
                         <div class="panel-actions">
+                          <button class="btn-ai" type="button" id="infra-ai-configure">AI 一键配置</button>
                           <button class="btn-secondary" type="button" id="infra-fill-local">填充本地示例</button>
                           <button class="btn-primary" type="button" id="infra-run-test">测试连接</button>
                         </div>
@@ -568,6 +569,90 @@
                             >
                           </div>
                         </div>
+
+                        <section class="ai-copilot-card" id="ai-copilot-card">
+                          <div class="ai-copilot-head">
+                            <div>
+                              <span class="ai-kicker">AI Copilot</span>
+                              <h4 id="ai-panel-title">AI 将根据已连接数据源自动生成接入配置</h4>
+                              <p id="ai-panel-desc">识别字段结构、主键与同步方式，直接给出推荐规则、落层目标和自动调优策略。</p>
+                            </div>
+                            <div class="ai-status-cluster">
+                              <span class="ai-status-pill is-idle" id="ai-status-pill">待启动</span>
+                              <button class="btn-secondary btn-ghost-mini" type="button" id="ai-auto-tune-toggle" aria-pressed="true">自动调优：开</button>
+                            </div>
+                          </div>
+
+                          <div class="ai-progress-rail">
+                            <span class="ai-progress-fill" id="ai-progress-fill"></span>
+                          </div>
+
+                          <div class="ai-copilot-grid">
+                            <div class="ai-copilot-main">
+                              <div class="ai-steps" id="ai-steps"></div>
+
+                              <div class="ai-generated-plan">
+                                <div class="ai-plan-head">
+                                  <div>
+                                    <strong>推荐配置草案</strong>
+                                    <p id="ai-summary-text">当前还没有应用 AI 配置，你可以先连接数据源，再交给 AI 自动建链。</p>
+                                  </div>
+                                  <span id="ai-confidence">置信度 --</span>
+                                </div>
+
+                                <div class="ai-plan-grid">
+                                  <article class="ai-plan-item">
+                                    <span>接入模式</span>
+                                    <strong id="ai-plan-mode">--</strong>
+                                  </article>
+                                  <article class="ai-plan-item">
+                                    <span>识别实体</span>
+                                    <strong id="ai-plan-entity">--</strong>
+                                  </article>
+                                  <article class="ai-plan-item">
+                                    <span>规则集</span>
+                                    <strong id="ai-plan-rule">--</strong>
+                                  </article>
+                                  <article class="ai-plan-item">
+                                    <span>目标层</span>
+                                    <strong id="ai-plan-target">--</strong>
+                                  </article>
+                                  <article class="ai-plan-item">
+                                    <span>执行节奏</span>
+                                    <strong id="ai-plan-cadence">--</strong>
+                                  </article>
+                                  <article class="ai-plan-item">
+                                    <span>联动演示</span>
+                                    <strong id="ai-linked-scene">--</strong>
+                                  </article>
+                                </div>
+                              </div>
+                            </div>
+
+                            <aside class="ai-copilot-side">
+                              <div class="ai-chip-card">
+                                <div class="ai-plan-head compact">
+                                  <strong>识别到的关键字段</strong>
+                                  <span id="ai-detected-label">等待分析</span>
+                                </div>
+                                <div class="ai-chip-list" id="ai-detected-fields"></div>
+                              </div>
+
+                              <div class="ai-tuning-card">
+                                <div class="ai-plan-head compact">
+                                  <strong>自动调优策略</strong>
+                                  <span id="ai-tuning-mode">未启用</span>
+                                </div>
+                                <div class="ai-tuning-list" id="ai-tuning-list"></div>
+                              </div>
+
+                              <div class="ai-action-row">
+                                <button class="btn-primary" type="button" id="ai-apply-config">应用推荐配置</button>
+                                <button class="btn-secondary" type="button" id="ai-run-tuning">立即自动调整</button>
+                              </div>
+                            </aside>
+                          </div>
+                        </section>
 
                         <section class="connection-config-card">
                           <div class="config-card-head">

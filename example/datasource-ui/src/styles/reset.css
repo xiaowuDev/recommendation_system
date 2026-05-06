@@ -17,9 +17,11 @@ body {
   text-rendering: optimizeLegibility;
   min-height: 100vh;
   background-image:
-    radial-gradient(circle at top left, rgba(123, 207, 255, 0.12), transparent 30%),
-    radial-gradient(circle at 80% 10%, rgba(225, 191, 120, 0.14), transparent 24%),
-    linear-gradient(180deg, #09131e 0%, #07111a 40%, #050d15 100%);
+    radial-gradient(ellipse 80% 60% at 5% 5%, rgba(123, 207, 255, 0.1), transparent),
+    radial-gradient(ellipse 60% 50% at 85% 8%, rgba(225, 191, 120, 0.12), transparent),
+    radial-gradient(ellipse 50% 40% at 50% 100%, rgba(95, 208, 157, 0.06), transparent),
+    linear-gradient(180deg, #0a1520 0%, #07111a 35%, #050d15 100%);
+  background-attachment: fixed;
 }
 
 input, select, textarea, button {
@@ -48,19 +50,22 @@ table {
 }
 
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(191, 208, 220, 0.18);
+  background: rgba(191, 208, 220, 0.16);
   border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(225, 191, 120, 0.34);
+  background: rgba(225, 191, 120, 0.32);
+  background-clip: content-box;
 }

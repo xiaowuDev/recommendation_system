@@ -37,6 +37,8 @@ import xiaowu.example.supplieretl.datasource.domain.entity.DataSourceConnectionT
 import xiaowu.example.supplieretl.datasource.domain.entity.DataSourceSecurityAuditLog;
 import xiaowu.example.supplieretl.datasource.domain.entity.DataSourceType;
 import xiaowu.example.supplieretl.datasource.domain.model.ExcelDataSourceConfig;
+import xiaowu.example.supplieretl.datasource.domain.transform.MysqlTransformRuleRegistry;
+import xiaowu.example.supplieretl.datasource.domain.transform.MysqlTransformRuleRegistry.MysqlTransformRuleCapability;
 import xiaowu.example.supplieretl.datasource.security.AuditActionType;
 import xiaowu.example.supplieretl.datasource.security.ConnectionSecurityAuditContext;
 import xiaowu.example.supplieretl.datasource.security.ConnectionTestGuardService;
@@ -49,6 +51,8 @@ import xiaowu.example.supplieretl.datasource.security.SecurityAuditStatus;
 @Tag(name = "Data Source Connection", description = "Generic data source connection management APIs")
 public class DataSourceConnectionController {
 
+  private static final MysqlTransformRuleRegistry TRANSFORM_RULE_REGISTRY = MysqlTransformRuleRegistry.defaultRegistry();
+
   private final DataSourceConnectionApplicationService applicationService;
   private final DataSourceConnectionTestApplicationService connectionTestApplicationService;
   private final ExcelConnectionTestApplicationService excelConnectionTestApplicationService;
@@ -59,6 +63,14 @@ public class DataSourceConnectionController {
   @Operation(summary = "List supported data source types")
   public List<SupportedDataSourceType> supportedTypes() {
     return applicationService.supportedTypes();
+  }
+
+  @GetMapping("/mysql/transform-rules")
+  @Operation(summary = "List supported MySQL transform rules for the rule builder")
+  public List<MysqlTransformRuleView> mysqlTransformRules() {
+    return TRANSFORM_RULE_REGISTRY.capabilities().stream()
+        .map(DataSourceConnectionController::toTransformRuleView)
+        .toList();
   }
 
   @GetMapping("/connections")
@@ -232,6 +244,15 @@ public class DataSourceConnectionController {
         log.getCreatedAt());
   }
 
+  private static MysqlTransformRuleView toTransformRuleView(MysqlTransformRuleCapability capability) {
+    return new MysqlTransformRuleView(
+        capability.code(),
+        capability.displayName(),
+        capability.description(),
+        capability.argumentMode(),
+        capability.argumentHint());
+  }
+
   private void auditResult(
       AuditActionType action,
       ConnectionSecurityAuditContext context,
@@ -272,6 +293,14 @@ public class DataSourceConnectionController {
   public record TestConnectionRequest(
       @Schema(description = "Data source type", example = "MYSQL") DataSourceType type,
       @Schema(description = "Type-specific config payload") JsonNode config) {
+  }
+
+  public record MysqlTransformRuleView(
+      String code,
+      String displayName,
+      String description,
+      String argumentMode,
+      String argumentHint) {
   }
 
   public record DataSourceConnectionView(

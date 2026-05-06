@@ -1,0 +1,724 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>数据源管理器 - 导入配置</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              dark: {
+                950: "#080c14",
+                900: "#0c1221",
+                850: "#111827",
+                800: "#162032",
+                750: "#1c2a42",
+                700: "#243552",
+                600: "#334e6e",
+                500: "#4a6a8f",
+              },
+              brand: {
+                600: "#2563eb",
+                500: "#3b82f6",
+                400: "#60a5fa",
+                300: "#93c5fd",
+              },
+              surface: {
+                1: "#0c1221",
+                2: "#162032",
+                3: "#1c2a42",
+                4: "#243552",
+              },
+            },
+            boxShadow: {
+              "glow-sm": "0 0 12px rgba(59,130,246,0.08)",
+              "glow-md": "0 0 24px rgba(59,130,246,0.12)",
+              "glow-lg": "0 4px 32px rgba(59,130,246,0.16)",
+              card: "0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2)",
+              "card-hover":
+                "0 4px 12px rgba(0,0,0,0.4), 0 2px 4px rgba(0,0,0,0.3)",
+              "inset-glow": "inset 0 1px 0 rgba(255,255,255,0.03)",
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      /* 滚动条 */
+      ::-webkit-scrollbar {
+        width: 5px;
+        height: 5px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #243552;
+        border-radius: 10px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #334e6e;
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
+      }
+
+      /* 呼吸光晕动画 */
+      @keyframes pulse-glow {
+        0%,
+        100% {
+          box-shadow: 0 0 8px rgba(59, 130, 246, 0.15);
+        }
+        50% {
+          box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+        }
+      }
+      .step-active-glow {
+        animation: pulse-glow 3s ease-in-out infinite;
+      }
+
+      /* 表单 focus 光效 */
+      .input-glow:focus {
+        box-shadow:
+          0 0 0 1px rgba(59, 130, 246, 0.5),
+          0 0 12px rgba(59, 130, 246, 0.1);
+      }
+
+      /* 卡片光泽 */
+      .card-shine {
+        position: relative;
+        overflow: hidden;
+      }
+      .card-shine::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.06),
+          transparent
+        );
+      }
+
+      /* 按钮微弹 */
+      .btn-lift {
+        transition: all 0.2s ease;
+      }
+      .btn-lift:hover {
+        transform: translateY(-1px);
+      }
+      .btn-lift:active {
+        transform: translateY(0);
+      }
+
+      /* 步骤连线渐变 */
+      .step-line {
+        background: linear-gradient(to bottom, #3b82f6, #243552 60%);
+      }
+
+      /* select 下拉箭头 */
+      select {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2393c5fd' d='M2.5 4.5l3.5 3.5 3.5-3.5'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        background-size: 14px;
+      }
+
+      /* 渐变文字 */
+      .text-gradient {
+        background: linear-gradient(135deg, #ffffff 0%, #93c5fd 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+    </style>
+  </head>
+
+  <body
+    class="bg-dark-950 text-gray-300 h-screen flex flex-col overflow-hidden"
+  >
+    <!-- ─── 顶部导航栏 ─── -->
+    <header
+      class="h-14 bg-surface-2/80 backdrop-blur-xl border-b border-white/[0.04] flex items-center justify-between px-6 shrink-0 z-20"
+    >
+      <div class="flex items-center gap-3">
+        <div
+          class="w-8 h-8 bg-brand-500/15 text-brand-400 rounded-lg flex items-center justify-center shadow-inset-glow"
+        >
+          <i class="ph ph-database text-lg"></i>
+        </div>
+        <span class="text-white font-semibold tracking-tight"
+          >数据源管理器</span
+        >
+      </div>
+
+      <nav
+        class="flex bg-dark-900/80 p-0.5 rounded-lg border border-white/[0.04]"
+      >
+        <button
+          class="px-4 py-1.5 text-xs rounded-md text-gray-500 hover:text-gray-300 transition-colors"
+        >
+          仪表盘
+        </button>
+        <button
+          class="px-4 py-1.5 text-xs rounded-md bg-surface-3 text-white shadow-card"
+        >
+          连接管理
+        </button>
+        <button
+          class="px-4 py-1.5 text-xs rounded-md text-gray-500 hover:text-gray-300 transition-colors"
+        >
+          导入
+        </button>
+      </nav>
+
+      <div class="flex items-center gap-3">
+        <div
+          class="flex bg-dark-900/80 rounded-full border border-white/[0.04] overflow-hidden"
+        >
+          <button class="px-3 py-1 text-[11px] bg-surface-3 text-white">
+            中文
+          </button>
+          <button
+            class="px-3 py-1 text-[11px] text-gray-500 hover:text-gray-300"
+          >
+            EN
+          </button>
+        </div>
+        <div
+          class="flex items-center gap-2 px-3 py-1 bg-emerald-500/8 text-emerald-400 border border-emerald-500/15 rounded-full text-[11px]"
+        >
+          <div
+            class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"
+          ></div>
+          本地控制台
+        </div>
+      </div>
+    </header>
+
+    <!-- ─── 主体内容区 (三栏布局: 20% / 55% / 25%) ─── -->
+    <div class="flex-1 flex overflow-hidden">
+      <!-- ▌ 左侧：步骤导航 (固定 220px, 紧凑) -->
+      <aside
+        class="w-[220px] bg-surface-2/40 border-r border-white/[0.03] p-4 flex flex-col overflow-y-auto shrink-0"
+      >
+        <div class="mb-4">
+          <h2 class="text-white font-semibold text-[13px] tracking-tight">
+            单页导入配置
+          </h2>
+          <p class="text-[10px] text-gray-500 mt-1 leading-relaxed">
+            配置数据源的提取、映射、过滤与转换。
+          </p>
+        </div>
+
+        <div class="flex items-center justify-between mb-2">
+          <span
+            class="text-[10px] font-medium text-gray-500 uppercase tracking-wider"
+            >步骤列表</span
+          >
+        </div>
+
+        <!-- 步骤列表 -->
+        <div class="space-y-1.5 relative">
+          <!-- 垂直连接线 -->
+          <div
+            class="absolute left-[13px] top-4 bottom-4 w-px step-line z-0"
+          ></div>
+
+          <!-- 步骤 1: 当前活动 -->
+          <div
+            class="relative z-10 flex gap-2.5 p-2 rounded-lg bg-brand-500/8 border border-brand-500/25 cursor-pointer step-active-glow"
+          >
+            <div
+              class="w-[26px] h-[26px] rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0 shadow-glow-sm"
+            >
+              1
+            </div>
+            <div class="min-w-0">
+              <div class="text-white text-xs font-medium">源</div>
+              <div class="text-[10px] text-brand-400 mt-0.5 truncate">
+                待选择源表
+              </div>
+            </div>
+          </div>
+
+          <!-- 步骤 2 -->
+          <div
+            class="relative z-10 flex gap-2.5 p-2 rounded-lg hover:bg-white/[0.02] border border-transparent transition-all cursor-pointer group"
+          >
+            <div
+              class="w-[26px] h-[26px] rounded-full bg-dark-900 border border-dark-700 text-gray-500 flex items-center justify-center text-[10px] font-bold shrink-0 group-hover:border-dark-600 transition-colors"
+            >
+              2
+            </div>
+            <div class="min-w-0">
+              <div
+                class="text-gray-400 text-xs font-medium group-hover:text-gray-300 transition-colors"
+              >
+                映射
+              </div>
+              <div class="text-[10px] text-gray-600 mt-0.5">0 条启用</div>
+            </div>
+          </div>
+
+          <!-- 步骤 3 -->
+          <div
+            class="relative z-10 flex gap-2.5 p-2 rounded-lg hover:bg-white/[0.02] border border-transparent transition-all cursor-pointer group"
+          >
+            <div
+              class="w-[26px] h-[26px] rounded-full bg-dark-900 border border-dark-700 text-gray-500 flex items-center justify-center text-[10px] font-bold shrink-0 group-hover:border-dark-600 transition-colors"
+            >
+              3
+            </div>
+            <div class="min-w-0">
+              <div
+                class="text-gray-400 text-xs font-medium group-hover:text-gray-300 transition-colors"
+              >
+                过滤与转换
+              </div>
+              <div class="text-[10px] text-gray-600 mt-0.5">0/0 项配置</div>
+            </div>
+          </div>
+
+          <!-- 步骤 4 -->
+          <div
+            class="relative z-10 flex gap-2.5 p-2 rounded-lg hover:bg-white/[0.02] border border-transparent transition-all cursor-pointer group"
+          >
+            <div
+              class="w-[26px] h-[26px] rounded-full bg-dark-900 border border-dark-700 text-gray-500 flex items-center justify-center text-[10px] font-bold shrink-0 group-hover:border-dark-600 transition-colors"
+            >
+              4
+            </div>
+            <div class="min-w-0">
+              <div
+                class="text-gray-400 text-xs font-medium group-hover:text-gray-300 transition-colors"
+              >
+                目标
+              </div>
+              <div class="text-[10px] text-gray-600 mt-0.5">
+                <span
+                  class="font-mono bg-dark-900/80 px-1 py-0.5 rounded text-[9px] text-gray-500 border border-white/[0.04]"
+                  >APPEND</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 底部进度 -->
+        <div class="mt-auto pt-4">
+          <div class="text-[10px] text-gray-500 mb-1.5 flex justify-between">
+            <span>整体进度</span>
+            <span class="text-brand-400">25%</span>
+          </div>
+          <div class="h-1 bg-dark-900 rounded-full overflow-hidden">
+            <div
+              class="h-full w-1/4 bg-gradient-to-r from-brand-500 to-brand-400 rounded-full"
+            ></div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- ▌ 中间：主配置区 (flex-1, 紧凑布局) -->
+      <main class="flex-1 bg-dark-950 overflow-y-auto min-w-0">
+        <div class="max-w-3xl mx-auto px-6 py-5">
+          <!-- 页面标题 -->
+          <div class="mb-5">
+            <div
+              class="flex items-center gap-2 text-[10px] text-gray-500 mb-1.5"
+            >
+              <span>导入配置</span>
+              <i class="ph ph-caret-right text-[10px]"></i>
+              <span class="text-brand-400">步骤 1 / 4</span>
+            </div>
+            <h1
+              class="text-xl text-white font-bold flex items-center gap-2.5 tracking-tight"
+            >
+              源配置
+              <span
+                class="text-[10px] font-medium px-2 py-0.5 bg-amber-500/10 text-amber-400 rounded border border-amber-500/15 inline-flex items-center gap-1"
+              >
+                <i class="ph ph-clock text-[10px]"></i> 待选择
+              </span>
+            </h1>
+            <p class="text-xs text-gray-500 mt-1">
+              确定需要读取的数据来源与读取方式。
+            </p>
+          </div>
+
+          <!-- 表单配置区 -->
+          <div class="space-y-4">
+            <!-- ── 数据范围卡片 ── -->
+            <section
+              class="bg-surface-2/60 border border-white/[0.04] rounded-xl shadow-card card-shine"
+            >
+              <!-- 卡片头 -->
+              <div
+                class="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.04]"
+              >
+                <div>
+                  <h3
+                    class="text-sm text-white font-semibold flex items-center gap-2"
+                  >
+                    <i class="ph ph-database text-brand-400 text-xs"></i>
+                    数据范围
+                  </h3>
+                  <p class="text-[11px] text-gray-500 mt-0.5">
+                    确定需要读取哪些表的数据以及读取方式。
+                  </p>
+                </div>
+                <!-- 模式切换 -->
+                <div
+                  class="flex bg-dark-900/60 p-0.5 rounded-lg border border-white/[0.04] shrink-0"
+                >
+                  <button
+                    class="px-3 py-1 text-[11px] rounded-md bg-surface-3 text-white shadow-card flex items-center gap-1 transition-all"
+                  >
+                    <i
+                      class="ph ph-list-bullets text-brand-400 text-[10px]"
+                    ></i>
+                    规则构建
+                  </button>
+                  <button
+                    class="px-3 py-1 text-[11px] rounded-md text-gray-500 hover:text-gray-300 transition-colors flex items-center gap-1"
+                  >
+                    <i class="ph ph-code text-[10px]"></i> 自定义 SQL
+                  </button>
+                </div>
+              </div>
+
+              <!-- 卡片体 -->
+              <div class="px-5 py-4 space-y-3.5">
+                <!-- 选择源表 -->
+                <div>
+                  <label class="block text-xs text-gray-400 mb-1.5 font-medium">
+                    选择源表 <span class="text-red-400/80">*</span>
+                  </label>
+                  <div class="relative">
+                    <i
+                      class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs"
+                    ></i>
+                    <input
+                      type="text"
+                      placeholder="搜索或选择表名 (例如: orders, users)..."
+                      class="w-full bg-dark-900/80 border border-white/[0.06] rounded-lg py-2 pl-9 pr-3 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-brand-500/60 input-glow transition-all"
+                    />
+                  </div>
+                </div>
+
+                <!-- 排序与截取 (两列) -->
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label
+                      class="block text-xs text-gray-400 mb-1.5 font-medium"
+                      >排序字段</label
+                    >
+                    <select
+                      class="w-full bg-dark-900/80 border border-white/[0.06] rounded-lg py-2 px-3 text-xs text-white appearance-none focus:outline-none focus:border-brand-500/60 input-glow transition-all"
+                    >
+                      <option value="">默认不排序</option>
+                      <option value="id">按 ID</option>
+                      <option value="created_at">按创建时间</option>
+                      <option value="updated_at">按更新时间</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label
+                      class="block text-xs text-gray-400 mb-1.5 font-medium"
+                      >排序方向</label
+                    >
+                    <select
+                      class="w-full bg-dark-900/80 border border-white/[0.06] rounded-lg py-2 px-3 text-xs text-white appearance-none focus:outline-none focus:border-brand-500/60 input-glow transition-all"
+                    >
+                      <option value="asc">升序 (ASC)</option>
+                      <option value="desc">降序 (DESC)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- 最大行数 -->
+                <div>
+                  <label class="block text-xs text-gray-400 mb-1.5 font-medium"
+                    >最大读取行数 (Limit)</label
+                  >
+                  <input
+                    type="number"
+                    placeholder="留空则不限制，例如: 10000"
+                    class="w-full bg-dark-900/80 border border-white/[0.06] rounded-lg py-2 px-3 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-brand-500/60 input-glow transition-all"
+                  />
+                </div>
+              </div>
+            </section>
+
+            <!-- ── 高级选项卡片 ── -->
+            <section
+              class="bg-surface-2/40 border border-white/[0.04] rounded-xl shadow-card card-shine"
+            >
+              <details class="group">
+                <summary
+                  class="flex items-center justify-between px-5 py-3 cursor-pointer select-none list-none"
+                >
+                  <div class="flex items-center gap-2">
+                    <i class="ph ph-sliders text-gray-500 text-xs"></i>
+                    <span class="text-xs text-gray-400 font-medium"
+                      >高级选项</span
+                    >
+                    <span
+                      class="text-[9px] px-1 py-0.5 bg-dark-900/60 text-gray-600 rounded border border-white/[0.04]"
+                      >可选</span
+                    >
+                  </div>
+                  <i
+                    class="ph ph-caret-down text-gray-500 text-xs transition-transform group-open:rotate-180"
+                  ></i>
+                </summary>
+                <div
+                  class="px-5 pb-4 pt-2 border-t border-white/[0.03] space-y-3.5"
+                >
+                  <div class="grid grid-cols-2 gap-3">
+                    <div>
+                      <label
+                        class="block text-xs text-gray-400 mb-1.5 font-medium"
+                        >批次大小</label
+                      >
+                      <input
+                        type="number"
+                        placeholder="1000"
+                        class="w-full bg-dark-900/80 border border-white/[0.06] rounded-lg py-2 px-3 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-brand-500/60 input-glow transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label
+                        class="block text-xs text-gray-400 mb-1.5 font-medium"
+                        >超时时间 (秒)</label
+                      >
+                      <input
+                        type="number"
+                        placeholder="300"
+                        class="w-full bg-dark-900/80 border border-white/[0.06] rounded-lg py-2 px-3 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-brand-500/60 input-glow transition-all"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label
+                      class="block text-xs text-gray-400 mb-1.5 font-medium"
+                      >增量字段 (用于增量同步)</label
+                    >
+                    <select
+                      class="w-full bg-dark-900/80 border border-white/[0.06] rounded-lg py-2 px-3 text-xs text-white appearance-none focus:outline-none focus:border-brand-500/60 input-glow transition-all"
+                    >
+                      <option value="">不使用增量同步</option>
+                      <option value="updated_at">updated_at</option>
+                      <option value="created_at">created_at</option>
+                    </select>
+                  </div>
+                </div>
+              </details>
+            </section>
+
+            <!-- ── 操作按钮 ── -->
+            <div class="flex items-center justify-between pt-2">
+              <button
+                class="text-xs text-gray-500 hover:text-gray-300 transition-colors flex items-center gap-1 btn-lift"
+              >
+                <i class="ph ph-arrow-left text-[10px]"></i> 返回列表
+              </button>
+              <button
+                class="bg-brand-500 hover:bg-brand-400 text-white px-5 py-2 rounded-lg shadow-glow-sm hover:shadow-glow-md text-xs font-medium transition-all flex items-center gap-1.5 btn-lift"
+              >
+                保存并进行映射 <i class="ph ph-arrow-right text-[10px]"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- ▌ 右侧：辅助面板 (固定 270px, 紧凑) -->
+      <aside
+        class="w-[270px] bg-surface-2/30 border-l border-white/[0.03] flex flex-col overflow-hidden shrink-0"
+      >
+        <!-- AI 辅助面板 -->
+        <div class="flex-1 p-4 border-b border-white/[0.04] overflow-y-auto">
+          <div class="flex items-center justify-between mb-3">
+            <h3
+              class="text-white text-xs font-semibold flex items-center gap-1.5"
+            >
+              <i class="ph ph-magic-wand text-violet-400 text-xs"></i> AI
+              辅助配置
+            </h3>
+            <span
+              class="text-[8px] px-1 py-0.5 bg-violet-500/15 text-violet-300 rounded border border-violet-500/20 font-medium tracking-wide"
+              >SSE</span
+            >
+          </div>
+          <p class="text-[10px] text-gray-500 mb-3 leading-relaxed">
+            输入自然语言描述，AI 会流式返回结构化配置并自动填充表单。
+          </p>
+
+          <div
+            class="bg-dark-900/80 border border-white/[0.06] rounded-lg p-2.5 focus-within:border-brand-500/40 transition-all"
+          >
+            <textarea
+              rows="3"
+              class="w-full bg-transparent text-[11px] text-white resize-none focus:outline-none placeholder-gray-600 leading-relaxed"
+              placeholder="例如：使用订单表 (orders)，提取订单号、用户ID、金额和更新时间，按时间倒序排列。"
+            ></textarea>
+          </div>
+
+          <button
+            class="w-full mt-2.5 bg-violet-500/10 hover:bg-violet-500/20 text-violet-300 py-2 rounded-lg text-[11px] flex items-center justify-center gap-1.5 transition-all border border-violet-500/15 hover:border-violet-500/30 btn-lift font-medium"
+          >
+            <i class="ph ph-paper-plane-tilt text-[10px]"></i> 识别并自动填充
+          </button>
+
+          <!-- AI 输出区 -->
+          <div
+            class="mt-3 bg-dark-900/60 border border-white/[0.04] rounded-lg p-2.5 min-h-[60px]"
+          >
+            <div class="flex items-center gap-1 mb-1.5">
+              <div class="w-1.5 h-1.5 rounded-full bg-gray-600"></div>
+              <span class="text-[9px] text-gray-500 font-medium">AI 输出</span>
+            </div>
+            <p class="text-[10px] text-gray-600 italic">等待输入...</p>
+          </div>
+        </div>
+
+        <!-- 配置摘要面板 -->
+        <div class="p-4 overflow-y-auto">
+          <div class="flex items-center justify-between mb-3">
+            <h3
+              class="text-white text-xs font-semibold flex items-center gap-1.5"
+            >
+              <i class="ph ph-clipboard-text text-brand-400 text-xs"></i>
+              配置摘要
+            </h3>
+            <span class="text-[9px] text-gray-500">实时预览</span>
+          </div>
+
+          <div class="space-y-2">
+            <!-- 源表 -->
+            <div
+              class="flex items-start gap-2.5 p-2.5 bg-dark-900/50 rounded-lg border border-white/[0.03]"
+            >
+              <div
+                class="w-6 h-6 rounded bg-brand-500/10 text-brand-400 flex items-center justify-center shrink-0 text-[10px]"
+              >
+                <i class="ph ph-table"></i>
+              </div>
+              <div class="min-w-0">
+                <div class="text-[10px] text-gray-500">源表</div>
+                <div
+                  class="text-[11px] text-gray-400 mt-0.5 font-mono truncate"
+                >
+                  —
+                </div>
+              </div>
+            </div>
+
+            <!-- 排序 -->
+            <div
+              class="flex items-start gap-2.5 p-2.5 bg-dark-900/50 rounded-lg border border-white/[0.03]"
+            >
+              <div
+                class="w-6 h-6 rounded bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0 text-[10px]"
+              >
+                <i class="ph ph-sort-ascending"></i>
+              </div>
+              <div class="min-w-0">
+                <div class="text-[10px] text-gray-500">排序</div>
+                <div class="text-[11px] text-gray-400 mt-0.5">默认不排序</div>
+              </div>
+            </div>
+
+            <!-- 行数 -->
+            <div
+              class="flex items-start gap-2.5 p-2.5 bg-dark-900/50 rounded-lg border border-white/[0.03]"
+            >
+              <div
+                class="w-6 h-6 rounded bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0 text-[10px]"
+              >
+                <i class="ph ph-rows"></i>
+              </div>
+              <div class="min-w-0">
+                <div class="text-[10px] text-gray-500">最大行数</div>
+                <div class="text-[11px] text-gray-400 mt-0.5">无限制</div>
+              </div>
+            </div>
+
+            <!-- 映射列 -->
+            <div
+              class="flex items-start gap-2.5 p-2.5 bg-dark-900/50 rounded-lg border border-white/[0.03]"
+            >
+              <div
+                class="w-6 h-6 rounded bg-violet-500/10 text-violet-400 flex items-center justify-center shrink-0 text-[10px]"
+              >
+                <i class="ph ph-arrows-left-right"></i>
+              </div>
+              <div class="min-w-0">
+                <div class="text-[10px] text-gray-500">映射列</div>
+                <div class="text-[11px] text-gray-400 mt-0.5">0 列</div>
+              </div>
+            </div>
+
+            <!-- 过滤条件 -->
+            <div
+              class="flex items-start gap-2.5 p-2.5 bg-dark-900/50 rounded-lg border border-white/[0.03]"
+            >
+              <div
+                class="w-6 h-6 rounded bg-pink-500/10 text-pink-400 flex items-center justify-center shrink-0 text-[10px]"
+              >
+                <i class="ph ph-funnel"></i>
+              </div>
+              <div class="min-w-0">
+                <div class="text-[10px] text-gray-500">过滤条件</div>
+                <div class="text-[11px] text-gray-400 mt-0.5">0 条</div>
+              </div>
+            </div>
+
+            <!-- 写入模式 -->
+            <div
+              class="flex items-start gap-2.5 p-2.5 bg-dark-900/50 rounded-lg border border-white/[0.03]"
+            >
+              <div
+                class="w-6 h-6 rounded bg-sky-500/10 text-sky-400 flex items-center justify-center shrink-0 text-[10px]"
+              >
+                <i class="ph ph-hard-drives"></i>
+              </div>
+              <div class="min-w-0">
+                <div class="text-[10px] text-gray-500">写入模式</div>
+                <div class="text-[11px] text-gray-400 mt-0.5 font-mono">
+                  APPEND
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 操作按钮 -->
+          <div class="mt-4 space-y-1.5">
+            <button
+              class="w-full bg-dark-900/60 hover:bg-dark-900 text-gray-400 py-1.5 rounded-lg text-[10px] flex items-center justify-center gap-1.5 transition-colors border border-white/[0.04] hover:border-white/[0.08] btn-lift"
+            >
+              <i class="ph ph-code text-[10px]"></i> 查看生成的 SQL
+            </button>
+            <button
+              class="w-full text-gray-500 hover:text-gray-400 py-1 text-[10px] flex items-center justify-center gap-1 transition-colors"
+            >
+              <i class="ph ph-copy text-[10px]"></i> 复制为 JSON
+            </button>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </body>
+</html>

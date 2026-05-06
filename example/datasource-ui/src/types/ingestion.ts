@@ -13,3 +13,11 @@ export interface IngestionJob {
   startedAt: string
   finishedAt: string | null
 }
+
+export interface MysqlTransformRuleCapability {
+  code: string
+  displayName: string
+  description: string
+  argumentMode: 'NONE' | 'OPTIONAL' | 'REQUIRED'
+  argumentHint: string | null
+}

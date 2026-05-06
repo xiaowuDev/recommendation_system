@@ -1,4 +1,4 @@
-import { request, requestMultipart } from './client'
+import { request, requestMultipart, requestSse } from './client'
 import type {
   DataSourceConnection,
   SupportedType,
@@ -6,12 +6,18 @@ import type {
   ConnectionTestLog,
   CreateConnectionPayload
 } from '@/types/connection'
-import type { IngestionJob } from '@/types/ingestion'
+import type { IngestionJob, MysqlTransformRuleCapability } from '@/types/ingestion'
+import type { MysqlAssistantChatResponse, MysqlAssistantHistoryEntry } from '@/types/ai'
+import { ApiError } from '@/types/common'
 
 // ---- Connection Management ----
 
 export function fetchSupportedTypes(): Promise<SupportedType[]> {
   return request('/types')
+}
+
+export function fetchMysqlTransformRules(): Promise<MysqlTransformRuleCapability[]> {
+  return request('/mysql/transform-rules')
 }
 
 export function fetchConnections(): Promise<DataSourceConnection[]> {
@@ -93,4 +99,61 @@ export function fetchJob(jobId: number): Promise<IngestionJob> {
 
 export function fetchConnectionJobs(connectionId: number, limit = 10): Promise<IngestionJob[]> {
   return request(`/connections/${connectionId}/jobs?limit=${limit}`)
+}
+
+export function fetchMysqlAssistantHistory(
+  connectionId: number,
+  limit?: number | null
+): Promise<MysqlAssistantHistoryEntry[]> {
+  const query = limit != null ? `?limit=${limit}` : ''
+  return request(`/connections/${connectionId}/ai/chat/history${query}`)
+}
+
+export async function streamMysqlAssistant(
+  connectionId: number,
+  payload: {
+    sessionId?: string | null
+    message: string
+  },
+  handlers: {
+    onSession?: (payload: { sessionId: string }) => void
+    onDelta?: (payload: { content: string }) => void
+    onResult?: (payload: MysqlAssistantChatResponse) => void
+    onDone?: () => void
+  }
+): Promise<void> {
+  await requestSse(`/connections/${connectionId}/ai/chat/stream`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+    async onEvent(event) {
+      switch (event.event) {
+        case 'session':
+          if (event.data) {
+            handlers.onSession?.(JSON.parse(event.data) as { sessionId: string })
+          }
+          return
+        case 'delta':
+          if (event.data) {
+            handlers.onDelta?.(JSON.parse(event.data) as { content: string })
+          }
+          return
+        case 'result':
+          if (event.data) {
+            handlers.onResult?.(JSON.parse(event.data) as MysqlAssistantChatResponse)
+          }
+          return
+        case 'done':
+          handlers.onDone?.()
+          return
+        case 'error': {
+          const payload = event.data
+            ? JSON.parse(event.data) as { status?: number; message?: string }
+            : {}
+          throw new ApiError(payload.status ?? 500, payload.message || 'SSE request failed')
+        }
+        default:
+          return
+      }
+    }
+  })
 }

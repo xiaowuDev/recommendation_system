@@ -29,7 +29,7 @@
         <spark.version>4.0.0</spark.version>
         <scala.version>2.13</scala.version>
         <kafka.version>3.7.0</kafka.version>
-        <spring-ai.version>1.0.0-M6</spring-ai.version>
+        <spring-ai.version>1.0.0</spring-ai.version>
     </properties>
 
     <dependencyManagement>

@@ -154,7 +154,7 @@ CREATE TABLE supplier_normalized_record (
     page_token            VARCHAR(256)  NOT NULL,
     next_page_token       VARCHAR(256)  NOT NULL,
     last_pulled_at        TIMESTAMP     NOT NULL,
-    raw_item_json         CLOB          NOT NULL,
+    raw_item_json         LONGTEXT      NOT NULL,
     created_at            TIMESTAMP     NOT NULL,
     updated_at            TIMESTAMP     NOT NULL
 );
@@ -173,7 +173,7 @@ CREATE TABLE etl_data_source_connection (
     connection_name    VARCHAR(64)   NOT NULL,
     data_source_type   VARCHAR(32)   NOT NULL,
     description        VARCHAR(255),
-    config_json        CLOB          NOT NULL,
+    config_json        LONGTEXT      NOT NULL,
     created_at         TIMESTAMP     NOT NULL,
     updated_at         TIMESTAMP     NOT NULL
 );
@@ -190,7 +190,7 @@ CREATE TABLE etl_connection_test_log (
     data_source_type   VARCHAR(32)   NOT NULL,
     success            BOOLEAN       NOT NULL,
     message            VARCHAR(512)  NOT NULL,
-    detail_json        CLOB,
+    detail_json        LONGTEXT,
     tested_at          TIMESTAMP     NOT NULL
 );
 
@@ -203,14 +203,31 @@ CREATE TABLE etl_ingestion_job (
     data_source_type   VARCHAR(32)   NOT NULL,
     status             VARCHAR(32)   NOT NULL,
     message            VARCHAR(512),
-    request_json       CLOB,
-    result_json        CLOB,
+    request_json       LONGTEXT,
+    result_json        LONGTEXT,
     started_at         TIMESTAMP     NOT NULL,
     finished_at        TIMESTAMP
 );
 
 CREATE INDEX idx_etl_ingestion_job_connection
     ON etl_ingestion_job (connection_id, started_at DESC);
+
+CREATE TABLE etl_ai_chat_history (
+    id                     BIGINT        AUTO_INCREMENT PRIMARY KEY,
+    connection_id          BIGINT        NOT NULL,
+    session_id             VARCHAR(128)  NOT NULL,
+    user_message           LONGTEXT      NOT NULL,
+    assistant_message      LONGTEXT      NOT NULL,
+    source_summary         LONGTEXT,
+    suggestion_available   BOOLEAN       NOT NULL,
+    suggested_request_json LONGTEXT,
+    warnings_json          LONGTEXT,
+    generated_at           TIMESTAMP     NOT NULL,
+    created_at             TIMESTAMP     NOT NULL
+);
+
+CREATE INDEX idx_etl_ai_chat_history_connection
+    ON etl_ai_chat_history (connection_id, generated_at DESC, id DESC);
 
 CREATE TABLE etl_connection_security_audit (
     id                 BIGINT        AUTO_INCREMENT PRIMARY KEY,
@@ -224,7 +241,7 @@ CREATE TABLE etl_connection_security_audit (
     success            BOOLEAN       NOT NULL,
     status             VARCHAR(32)   NOT NULL,
     message            VARCHAR(512)  NOT NULL,
-    detail_json        CLOB,
+    detail_json        LONGTEXT,
     created_at         TIMESTAMP     NOT NULL
 );
 

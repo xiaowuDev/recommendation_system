@@ -112,8 +112,8 @@ const typeHighlights = computed(() => [
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(420px, 0.85fr);
-  gap: 26px;
+  grid-template-columns: minmax(0, 1.2fr) minmax(480px, 0.8fr);
+  gap: 32px;
   align-items: stretch;
 }
 
@@ -127,13 +127,6 @@ const typeHighlights = computed(() => [
   display: flex;
   gap: 12px;
   margin-top: 6px;
-}
-
-.metric-helper {
-  display: block;
-  margin-top: 8px;
-  color: var(--color-text-muted);
-  font-size: 12px;
 }
 
 .library-content {

@@ -3,6 +3,8 @@ package xiaowu.example.supplieretl.datasource.domain.model;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 
 class MysqlIngestionRequestTest {
@@ -55,5 +57,61 @@ class MysqlIngestionRequestTest {
     assertThatThrownBy(request::validate)
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("maxRows");
+  }
+
+  @Test
+  void shouldAcceptNumericTransformTypes() {
+    MysqlIngestionRequest request = new MysqlIngestionRequest(
+        null,
+        "recommendation.item_catalog",
+        List.of(new MysqlIngestionRequest.FieldMappingRule("price", "price", true)),
+        List.of(),
+        List.of(
+            new MysqlIngestionRequest.TransformRule("price", "price_in_cents", "MULTIPLY", "100", true),
+            new MysqlIngestionRequest.TransformRule("price_in_cents", "price_in_cents", "ROUND", "0", true)),
+        new MysqlIngestionRequest.TargetConfig("item_catalog_export", "APPEND", null, null),
+        null,
+        null,
+        1000);
+
+    request.validate();
+    assertThat(request.enabledTransformRules()).hasSize(2);
+  }
+
+  @Test
+  void shouldRequireArgumentForMultiplyTransform() {
+    MysqlIngestionRequest request = new MysqlIngestionRequest(
+        null,
+        "recommendation.item_catalog",
+        List.of(new MysqlIngestionRequest.FieldMappingRule("price", "price", true)),
+        List.of(),
+        List.of(new MysqlIngestionRequest.TransformRule("price", "price_in_cents", "MULTIPLY", null, true)),
+        new MysqlIngestionRequest.TargetConfig("item_catalog_export", "APPEND", null, null),
+        null,
+        null,
+        1000);
+
+    assertThatThrownBy(request::validate)
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("transformRules.argument is required for type MULTIPLY");
+  }
+
+  @Test
+  void shouldAllowRoundWithoutArgument() {
+    MysqlIngestionRequest request = new MysqlIngestionRequest(
+        null,
+        "recommendation.item_catalog",
+        List.of(new MysqlIngestionRequest.FieldMappingRule("price", "price", true)),
+        List.of(),
+        List.of(new MysqlIngestionRequest.TransformRule("price", "price_rounded", "ROUND", null, true)),
+        new MysqlIngestionRequest.TargetConfig("item_catalog_export", "APPEND", null, null),
+        null,
+        null,
+        1000);
+
+    request.validate();
+    assertThat(request.enabledTransformRules()).singleElement()
+        .extracting(MysqlIngestionRequest.TransformRule::transformType)
+        .isEqualTo("ROUND");
   }
 }

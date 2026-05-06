@@ -197,6 +197,10 @@ const state = {
 
 const infraState = {
   activeTarget: "kafka",
+  aiAutoTune: true,
+  aiBusy: false,
+  aiRunId: 0,
+  aiByTarget: {},
 };
 
 const INFRA_TEST_FORMS = {
@@ -340,6 +344,437 @@ const INFRA_TEST_FORMS = {
   },
 };
 
+const AI_COPILOT_STEPS = [
+  {
+    title: "识别连接特征",
+    detail: "读取连接地址、采样字段和同步方式",
+  },
+  {
+    title: "推断实体与主键",
+    detail: "判断主数据 / 事实流 / 维表并识别主键",
+  },
+  {
+    title: "生成规则与落层",
+    detail: "输出规则集、分层目标和写入节奏",
+  },
+  {
+    title: "启用自动调优",
+    detail: "结合吞吐、脏数据率与回压自动调整",
+  },
+];
+
+const AI_COPILOT_PROFILES = {
+  kafka: {
+    title: "检测到 Kafka 流式数据源，适合直接生成实时供应商接入链路",
+    description:
+      "AI 会读取 broker 和 topic 语义，推断消息结构，并生成标准化、幂等写入和 DLQ 策略。",
+    detectedLabel: "5 个关键字段",
+    detectedFields: [
+      "supplierCode",
+      "supplierName",
+      "status",
+      "taxNo",
+      "updatedAt",
+    ],
+    linkedSceneLabel: "ERP 供应商数据接入",
+    plan: {
+      mode: "CDC + Streaming",
+      entity: "Supplier Master",
+      rule: "supplier-status-ai-v1",
+      target: "DWD Supplier",
+      cadence: "2s 增量刷新",
+    },
+    tuning: [
+      {
+        label: "写入策略",
+        value: "UPSERT by supplierCode",
+      },
+      {
+        label: "异常隔离",
+        value: "Dirty -> DLQ quarantine",
+      },
+      {
+        label: "弹性并发",
+        value: "4 workers, burst to 8",
+      },
+    ],
+    formOverrides: {
+      bootstrapServers: "localhost:9092",
+      topic: "etl.raw.supplier.master",
+      clientId: "ai-supplier-master-sync",
+    },
+    sceneKey: "erp",
+    sceneConfig: {
+      sourceLabel: "Kafka Supplier Stream",
+      rawTopic: "etl.raw.supplier.master",
+      engineLabel: "AI Normalize + Validate",
+      targetLabel: "DWD Supplier",
+      ruleEditorTitle: "AI 生成的供应商规范化规则",
+      ruleLines: [
+        "status in {A,Y,ENABLE} -> ACTIVE",
+        "status in {B,N,DISABLE} -> INACTIVE",
+        "taxNo empty -> mark for review",
+        "supplierCode -> upsert key",
+      ],
+      auditTitle: "AI supplier pipeline generated",
+    },
+    tuningPasses: [
+      {
+        confidence: "92%",
+        summary: "已生成 Kafka 主数据实时接入配置，并启用基础幂等、校验和隔离策略。",
+        metrics: {
+          throughput: "19,880 / min",
+          dirty: "0.5%",
+          successRate: "99.5%",
+          dlq: "7",
+          replay: "2",
+        },
+        version: "v2026.04.13-ai-kafka.1",
+        auditDetail: "supplier topic auto-mapped -> DWD Supplier",
+      },
+      {
+        confidence: "96%",
+        summary: "AI 根据吞吐与脏数据趋势收紧了校验阈值，并提升了写入并发。",
+        plan: {
+          rule: "supplier-status-ai-v2",
+          cadence: "500ms burst / 2s steady",
+        },
+        tuning: [
+          {
+            label: "写入策略",
+            value: "UPSERT + conflict retry",
+          },
+          {
+            label: "字段校验",
+            value: "缺失 taxNo -> quarantine",
+          },
+          {
+            label: "弹性并发",
+            value: "8 workers, dynamic backpressure",
+          },
+        ],
+        metrics: {
+          throughput: "22,640 / min",
+          dirty: "0.3%",
+          successRate: "99.8%",
+          dlq: "3",
+          replay: "1",
+        },
+        version: "v2026.04.13-ai-kafka.2",
+        auditDetail: "throughput auto-tuned, DLQ rate reduced",
+      },
+    ],
+    resultMessage:
+      "AI 已根据 Kafka 连接自动填充 Topic、客户端标识和供应商主数据规则。",
+  },
+  mysql: {
+    title: "检测到 MySQL 事务型数据源，适合生成支付流水规范化链路",
+    description:
+      "AI 会识别交易主键、金额字段和状态码，自动配置去重、单位换算和事实表落层策略。",
+    detectedLabel: "5 个关键字段",
+    detectedFields: [
+      "trade_no",
+      "merchant_id",
+      "amount_yuan",
+      "pay_status",
+      "gateway_ts",
+    ],
+    linkedSceneLabel: "支付流水清洗与金额标准化",
+    plan: {
+      mode: "JDBC + Incremental Snapshot",
+      entity: "Payment Fact",
+      rule: "payment-amount-ai-v1",
+      target: "FACT Payment",
+      cadence: "30s 微批",
+    },
+    tuning: [
+      {
+        label: "幂等策略",
+        value: "trade_no de-dup",
+      },
+      {
+        label: "金额换算",
+        value: "yuan -> fen",
+      },
+      {
+        label: "回压策略",
+        value: "adaptive batch size 500",
+      },
+    ],
+    formOverrides: {
+      jdbcUrl: "jdbc:mysql://localhost:3306/payment_center",
+      username: "etl_reader",
+      password: "demo-pass",
+      validationQuery: "SELECT 1",
+    },
+    sceneKey: "payment",
+    sceneConfig: {
+      sourceLabel: "MySQL Payment CDC",
+      rawTopic: "etl.raw.payment.mysql",
+      engineLabel: "AI Convert + Dedup",
+      targetLabel: "FACT Payment",
+      ruleEditorTitle: "AI 生成的支付清洗规则",
+      ruleLines: [
+        "amount_yuan * 100 -> amount_fen",
+        "duplicate trade_no -> discard",
+        "pay_status in SUCCESS_SET -> SUCCESS",
+        "gateway_ts -> event_time",
+      ],
+      auditTitle: "AI payment pipeline generated",
+    },
+    tuningPasses: [
+      {
+        confidence: "90%",
+        summary: "已生成支付流水的微批接入配置，默认打开去重和金额标准化。",
+        metrics: {
+          throughput: "28,600 / min",
+          dirty: "0.9%",
+          successRate: "99.1%",
+          dlq: "11",
+          replay: "4",
+        },
+        version: "v2026.04.13-ai-mysql.1",
+        auditDetail: "payment mysql source mapped -> FACT Payment",
+      },
+      {
+        confidence: "95%",
+        summary: "AI 已根据库端延迟和重复率优化微批大小，并加强状态码归一规则。",
+        plan: {
+          rule: "payment-amount-ai-v2",
+          cadence: "10s 微批 + 异常快刷",
+        },
+        tuning: [
+          {
+            label: "幂等策略",
+            value: "trade_no + merchant shard",
+          },
+          {
+            label: "金额换算",
+            value: "高精度 decimal -> fen",
+          },
+          {
+            label: "回压策略",
+            value: "adaptive batch size 1200",
+          },
+        ],
+        metrics: {
+          throughput: "34,220 / min",
+          dirty: "0.6%",
+          successRate: "99.6%",
+          dlq: "6",
+          replay: "2",
+        },
+        version: "v2026.04.13-ai-mysql.2",
+        auditDetail: "batch size auto-tuned for payment import",
+      },
+    ],
+    resultMessage:
+      "AI 已根据 MySQL 连接自动补齐 JDBC 示例、支付规则模板和事实表落层配置。",
+  },
+  redis: {
+    title: "检测到 Redis 规则 / 缓存节点，适合生成回放治理与高频去重策略",
+    description:
+      "AI 会识别 key pattern 和库位信息，自动配置缓存命中、回放保护与限流修复逻辑。",
+    detectedLabel: "4 个关键字段",
+    detectedFields: ["key", "ttl", "hash_slot", "version"],
+    linkedSceneLabel: "数据治理、回放与质量审计",
+    plan: {
+      mode: "Low-latency Cache Hook",
+      entity: "Replay Guard",
+      rule: "replay-cache-ai-v1",
+      target: "Audit Log",
+      cadence: "实时命中",
+    },
+    tuning: [
+      {
+        label: "缓存命中",
+        value: "rule:* warmup",
+      },
+      {
+        label: "回放保护",
+        value: "burst lock + retry window",
+      },
+      {
+        label: "限流恢复",
+        value: "dynamic semaphore",
+      },
+    ],
+    formOverrides: {
+      host: "localhost",
+      port: "6379",
+      database: "0",
+      password: "",
+      keyPattern: "rule:*",
+    },
+    sceneKey: "governance",
+    sceneConfig: {
+      sourceLabel: "Redis Rule Cache",
+      rawTopic: "etl.dlq.replay.guard",
+      engineLabel: "AI Replay + Cache Repair",
+      targetLabel: "Audit Log",
+      ruleEditorTitle: "AI 生成的缓存/回放治理规则",
+      ruleLines: [
+        "rule:* -> hot cache warmup",
+        "lock timeout -> replay defer",
+        "burst traffic -> semaphore throttle",
+        "cache miss -> fallback audit trail",
+      ],
+      auditTitle: "AI governance strategy generated",
+    },
+    tuningPasses: [
+      {
+        confidence: "88%",
+        summary: "已生成 Redis 回放治理配置，默认开启缓存预热和回压保护。",
+        metrics: {
+          throughput: "57,400 / min",
+          dirty: "0.6%",
+          successRate: "99.4%",
+          dlq: "18",
+          replay: "7",
+        },
+        version: "v2026.04.13-ai-redis.1",
+        auditDetail: "cache warmup and replay guard enabled",
+      },
+      {
+        confidence: "93%",
+        summary: "AI 已根据缓存抖动和并发峰值优化回放锁粒度，减少重复处理。",
+        plan: {
+          rule: "replay-cache-ai-v2",
+          cadence: "实时命中 + 2s 恢复窗口",
+        },
+        tuning: [
+          {
+            label: "缓存命中",
+            value: "rule:* + dimension:* warmup",
+          },
+          {
+            label: "回放保护",
+            value: "lease lock + jitter retry",
+          },
+          {
+            label: "限流恢复",
+            value: "adaptive semaphore by lag",
+          },
+        ],
+        metrics: {
+          throughput: "61,900 / min",
+          dirty: "0.3%",
+          successRate: "99.7%",
+          dlq: "9",
+          replay: "3",
+        },
+        version: "v2026.04.13-ai-redis.2",
+        auditDetail: "replay duplicates reduced after auto-tuning",
+      },
+    ],
+    resultMessage:
+      "AI 已根据 Redis 节点自动补齐 key pattern、治理规则和回放保护策略。",
+  },
+  excel: {
+    title: "检测到 Excel 文件接入，适合生成表头识别和供应商主数据导入链路",
+    description:
+      "AI 会根据 sheet、表头行和样本大小推断结构，自动生成列映射、清洗规则和导入节奏。",
+    detectedLabel: "5 个关键字段",
+    detectedFields: [
+      "供应商编码",
+      "供应商名称",
+      "状态",
+      "税号",
+      "更新时间",
+    ],
+    linkedSceneLabel: "ERP 供应商数据接入",
+    plan: {
+      mode: "File Parse + Schema Infer",
+      entity: "Supplier Roster",
+      rule: "excel-supplier-ai-v1",
+      target: "DWD Supplier",
+      cadence: "上传后立即解析",
+    },
+    tuning: [
+      {
+        label: "表头识别",
+        value: "header row auto-detect",
+      },
+      {
+        label: "列映射",
+        value: "中文列名 -> canonical schema",
+      },
+      {
+        label: "脏行处理",
+        value: "invalid row -> quarantine sheet",
+      },
+    ],
+    formOverrides: {
+      sheetName: "SupplierMaster",
+      headerRowIndex: "1",
+      sampleSize: "50",
+    },
+    sceneKey: "erp",
+    sceneConfig: {
+      sourceLabel: "Excel Supplier Import",
+      rawTopic: "etl.raw.excel.supplier",
+      engineLabel: "AI Schema Infer + Normalize",
+      targetLabel: "DWD Supplier",
+      ruleEditorTitle: "AI 生成的 Excel 列映射规则",
+      ruleLines: [
+        "供应商编码 -> supplier_code",
+        "状态 -> normalized_status",
+        "税号为空 -> mark for review",
+        "更新时间 -> event_time",
+      ],
+      auditTitle: "AI excel ingestion generated",
+    },
+    tuningPasses: [
+      {
+        confidence: "89%",
+        summary: "已生成 Excel 解析配置，建议上传文件后直接执行表头识别和列映射。",
+        metrics: {
+          throughput: "2,400 rows / min",
+          dirty: "1.1%",
+          successRate: "98.9%",
+          dlq: "5",
+          replay: "1",
+        },
+        version: "v2026.04.13-ai-excel.1",
+        auditDetail: "excel header mapped -> DWD Supplier",
+      },
+      {
+        confidence: "94%",
+        summary: "AI 已根据列名相似度和空值比例优化映射规则，并增强脏行隔离。",
+        plan: {
+          rule: "excel-supplier-ai-v2",
+          cadence: "上传后 5s 内完成结构化",
+        },
+        tuning: [
+          {
+            label: "表头识别",
+            value: "fuzzy header + synonym map",
+          },
+          {
+            label: "列映射",
+            value: "中文/英文列名双向归一",
+          },
+          {
+            label: "脏行处理",
+            value: "invalid row -> quarantine + repair hint",
+          },
+        ],
+        metrics: {
+          throughput: "3,180 rows / min",
+          dirty: "0.4%",
+          successRate: "99.4%",
+          dlq: "2",
+          replay: "0",
+        },
+        version: "v2026.04.13-ai-excel.2",
+        auditDetail: "excel column mapping auto-tuned by sample stats",
+      },
+    ],
+    resultMessage:
+      "AI 已根据 Excel 场景自动补齐 sheet、表头行与样本扫描参数；文件本身仍需你选择上传。",
+  },
+};
+
 function now() {
   const d = new Date();
   return (
@@ -356,6 +791,360 @@ function $(sel) {
 }
 function $all(sel) {
   return Array.from(document.querySelectorAll(sel));
+}
+
+function wait(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+function setText(id, value) {
+  const element = $("#" + id);
+  if (element) {
+    element.textContent = value;
+  }
+}
+
+function getAiProfile(target) {
+  return AI_COPILOT_PROFILES[target];
+}
+
+function getAiState(target) {
+  if (!infraState.aiByTarget[target]) {
+    infraState.aiByTarget[target] = {
+      configured: false,
+      tuneIndex: 0,
+      activeStep: -1,
+      completedSteps: 0,
+      progress: 0,
+      running: false,
+    };
+  }
+  return infraState.aiByTarget[target];
+}
+
+function getAiPass(target) {
+  const profile = getAiProfile(target);
+  const aiState = getAiState(target);
+  if (!profile || !profile.tuningPasses.length) {
+    return null;
+  }
+  const index = Math.min(aiState.tuneIndex, profile.tuningPasses.length - 1);
+  return profile.tuningPasses[index];
+}
+
+function getAiPlan(target) {
+  const profile = getAiProfile(target);
+  const pass = getAiPass(target);
+  if (!profile) {
+    return null;
+  }
+  return {
+    ...profile.plan,
+    ...(pass?.plan || {}),
+  };
+}
+
+function renderAiCopilot(target) {
+  const profile = getAiProfile(target);
+  if (!profile) return;
+
+  const aiState = getAiState(target);
+  const pass = getAiPass(target);
+  const plan = getAiPlan(target);
+
+  setText("ai-panel-title", profile.title);
+  setText("ai-panel-desc", profile.description);
+  setText("ai-detected-label", profile.detectedLabel);
+  setText(
+    "ai-summary-text",
+    aiState.configured
+      ? pass?.summary || profile.resultMessage
+      : "当前还没有应用 AI 配置，你可以先连接数据源，再交给 AI 自动建链。"
+  );
+  setText("ai-confidence", pass ? `置信度 ${pass.confidence}` : "置信度 --");
+  setText("ai-plan-mode", plan?.mode || "--");
+  setText("ai-plan-entity", plan?.entity || "--");
+  setText("ai-plan-rule", plan?.rule || "--");
+  setText("ai-plan-target", plan?.target || "--");
+  setText("ai-plan-cadence", plan?.cadence || "--");
+  setText("ai-linked-scene", profile.linkedSceneLabel);
+
+  const pill = $("#ai-status-pill");
+  if (pill) {
+    const statusClass = aiState.running
+      ? "is-running"
+      : aiState.configured
+        ? "is-ready"
+        : "is-idle";
+    const statusText = aiState.running
+      ? "分析中"
+      : aiState.configured
+        ? infraState.aiAutoTune
+          ? "已接管调优"
+          : "已生成配置"
+        : "待启动";
+    pill.className = `ai-status-pill ${statusClass}`;
+    pill.textContent = statusText;
+  }
+
+  const toggle = $("#ai-auto-tune-toggle");
+  if (toggle) {
+    toggle.textContent = `自动调优：${infraState.aiAutoTune ? "开" : "关"}`;
+    toggle.setAttribute("aria-pressed", String(infraState.aiAutoTune));
+  }
+
+  const progress = $("#ai-progress-fill");
+  if (progress) {
+    progress.style.width = `${aiState.progress}%`;
+  }
+
+  const steps = $("#ai-steps");
+  if (steps) {
+    steps.innerHTML = AI_COPILOT_STEPS.map((step, index) => {
+      const classes = [
+        "ai-step",
+        index < aiState.completedSteps ? "is-complete" : "",
+        index === aiState.activeStep ? "is-active" : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
+      return `
+        <article class="${classes}">
+          <small>STEP ${index + 1}</small>
+          <strong>${escapeHtml(step.title)}</strong>
+          <p>${escapeHtml(step.detail)}</p>
+        </article>
+      `;
+    }).join("");
+  }
+
+  const fields = $("#ai-detected-fields");
+  if (fields) {
+    fields.innerHTML = profile.detectedFields
+      .map((field) => `<span class="ai-chip">${escapeHtml(field)}</span>`)
+      .join("");
+  }
+
+  setText(
+    "ai-tuning-mode",
+    aiState.configured
+      ? infraState.aiAutoTune
+        ? "持续监控中"
+        : "自动调优已暂停"
+      : "未启用"
+  );
+
+  const tuningList = $("#ai-tuning-list");
+  if (tuningList) {
+    const items = pass?.tuning || profile.tuning;
+    tuningList.innerHTML = items
+      .map(
+        (item) => `
+          <div class="ai-tuning-item">
+            <span>${escapeHtml(item.label)}</span>
+            <strong>${escapeHtml(item.value)}</strong>
+          </div>
+        `
+      )
+      .join("");
+  }
+}
+
+function fillFormValues(values) {
+  Object.entries(values).forEach(([name, value]) => {
+    const element = $("#infra-field-" + name);
+    if (!element || element.type === "file") return;
+    element.value = value;
+    element.classList.add("is-ai-filled");
+    setTimeout(() => {
+      element.classList.remove("is-ai-filled");
+    }, 1500);
+  });
+}
+
+function applyAiScene(target) {
+  const profile = getAiProfile(target);
+  const pass = getAiPass(target);
+  if (!profile || !pass) return;
+
+  const scene = scenes.find((item) => item.key === profile.sceneKey);
+  if (!scene) return;
+
+  const plan = getAiPlan(target);
+  scene.sourceLabel = profile.sceneConfig.sourceLabel;
+  scene.rawTopic = profile.sceneConfig.rawTopic;
+  scene.ruleLabel = plan.rule;
+  scene.engineLabel = profile.sceneConfig.engineLabel;
+  scene.targetLabel = plan.target;
+  scene.ruleEditorTitle = profile.sceneConfig.ruleEditorTitle;
+  scene.ruleLines = profile.sceneConfig.ruleLines.slice();
+  scene.throughput = pass.metrics.throughput;
+  scene.dirty = pass.metrics.dirty;
+  scene.successRate = pass.metrics.successRate;
+  scene.dlq = pass.metrics.dlq;
+  scene.replay = pass.metrics.replay;
+  scene.version = pass.version;
+  scene.audit = {
+    time: now(),
+    title: profile.sceneConfig.auditTitle,
+    detail: pass.auditDetail,
+  };
+
+  const activeScene = scenes[state.activeIndex];
+  if (activeScene && activeScene.key === profile.sceneKey) {
+    applyScene(state.activeIndex);
+  }
+}
+
+function appendInfraLog(message, level = "info") {
+  const container = $("#infra-terminal-logs");
+  if (!container) return;
+
+  const row = document.createElement("div");
+  row.innerHTML =
+    `<span class="log-time">[${now()}]</span> ` +
+    `<span class="log-level ${level}">${level.toUpperCase()}</span> ` +
+    escapeHtml(message);
+
+  container.prepend(row);
+
+  while (container.children.length > 6) {
+    container.removeChild(container.lastChild);
+  }
+}
+
+function markAiConfigured(target) {
+  const aiState = getAiState(target);
+  aiState.configured = true;
+  aiState.completedSteps = AI_COPILOT_STEPS.length;
+  aiState.activeStep = -1;
+  aiState.progress = 100;
+}
+
+function applyAiRecommendation(target, options = {}) {
+  const profile = getAiProfile(target);
+  if (!profile) return;
+
+  const aiState = getAiState(target);
+  if (options.markConfigured) {
+    markAiConfigured(target);
+  }
+
+  fillFormValues(profile.formOverrides);
+  applyAiScene(target);
+  renderAiCopilot(target);
+
+  if (options.showMessage) {
+    const pass = getAiPass(target);
+    renderConnectionTestResult(
+      "success",
+      options.title || "AI 已应用推荐配置",
+      options.message || pass?.summary || profile.resultMessage
+    );
+  }
+}
+
+async function runAiConfigure() {
+  const target = infraState.activeTarget;
+  const profile = getAiProfile(target);
+  if (!profile || infraState.aiBusy) return;
+
+  const runId = ++infraState.aiRunId;
+  const aiState = getAiState(target);
+  infraState.aiBusy = true;
+  aiState.tuneIndex = 0;
+  aiState.running = true;
+  aiState.activeStep = 0;
+  aiState.completedSteps = 0;
+  aiState.progress = 12;
+  renderAiCopilot(target);
+
+  renderConnectionTestResult(
+    "loading",
+    "AI 正在生成配置",
+    "正在分析已连接数据源、字段结构和最适合的落层策略。"
+  );
+
+  const stepLogs = [
+    "AI 已读取连接参数并开始识别数据源形态。",
+    "AI 已推断主键、实体类型与时间语义。",
+    "AI 已生成规则集、目标层和执行节奏。",
+    infraState.aiAutoTune
+      ? "AI 已启用自动调优策略，将持续观察吞吐和脏数据率。"
+      : "AI 已生成配置，自动调优当前处于关闭状态。",
+  ];
+
+  for (let index = 0; index < AI_COPILOT_STEPS.length; index += 1) {
+    if (runId !== infraState.aiRunId) {
+      return;
+    }
+    aiState.activeStep = index;
+    aiState.progress = 25 + index * 20;
+    renderAiCopilot(target);
+    appendInfraLog(stepLogs[index]);
+    await wait(320);
+    aiState.completedSteps = index + 1;
+    renderAiCopilot(target);
+    await wait(180);
+  }
+
+  aiState.running = false;
+  infraState.aiBusy = false;
+  markAiConfigured(target);
+  applyAiRecommendation(target, {
+    showMessage: true,
+    title: "AI 已生成推荐配置",
+    message: profile.resultMessage,
+  });
+}
+
+async function runAiTuning() {
+  const target = infraState.activeTarget;
+  const profile = getAiProfile(target);
+  if (!profile || infraState.aiBusy) return;
+
+  const aiState = getAiState(target);
+  if (!aiState.configured) {
+    await runAiConfigure();
+    return;
+  }
+
+  const nextIndex = Math.min(
+    aiState.tuneIndex + 1,
+    profile.tuningPasses.length - 1
+  );
+  if (nextIndex === aiState.tuneIndex) {
+    renderConnectionTestResult(
+      "success",
+      "AI 已保持当前最优配置",
+      "当前策略已经处于建议档位，AI 会继续观察实时指标。"
+    );
+    return;
+  }
+
+  infraState.aiBusy = true;
+  aiState.running = true;
+  aiState.activeStep = 3;
+  aiState.progress = 92;
+  renderAiCopilot(target);
+  appendInfraLog("AI 正在根据实时吞吐和脏数据率自动调整配置。");
+  renderConnectionTestResult(
+    "loading",
+    "AI 自动调整中",
+    "正在优化规则版本、并发策略和节奏参数。"
+  );
+  await wait(420);
+
+  aiState.running = false;
+  aiState.tuneIndex = nextIndex;
+  infraState.aiBusy = false;
+  markAiConfigured(target);
+  applyAiRecommendation(target, {
+    showMessage: true,
+    title: "AI 已自动调整",
+  });
 }
 
 /* ---- Progress bar ---- */
@@ -771,6 +1560,10 @@ function updateInfraDetailPanel(target) {
     .join("");
 
   renderInfraForm(target);
+  renderAiCopilot(target);
+  if (getAiState(target).configured) {
+    fillFormValues(getAiProfile(target).formOverrides);
+  }
   renderConnectionTestResult("idle", "等待测试", "填写参数后点击“测试连接”。");
 }
 
@@ -807,17 +1600,49 @@ function renderInfraForm(target) {
 }
 
 function bindInfraTestActions() {
+  const aiBtn = $("#infra-ai-configure");
   const fillBtn = $("#infra-fill-local");
   const runBtn = $("#infra-run-test");
+  const applyBtn = $("#ai-apply-config");
+  const tuneBtn = $("#ai-run-tuning");
+  const autoTuneBtn = $("#ai-auto-tune-toggle");
+  if (aiBtn) {
+    aiBtn.addEventListener("click", () => {
+      void runAiConfigure();
+    });
+  }
   if (fillBtn) {
     fillBtn.addEventListener("click", () => {
       renderInfraForm(infraState.activeTarget);
-      renderConnectionTestResult("idle", "已填充本地示例", "你可以直接测试，也可以把地址改成云端配置。");
+      renderConnectionTestResult(
+        "idle",
+        "已填充本地示例",
+        "你可以直接测试，也可以继续交给 AI 自动生成配置。"
+      );
     });
   }
   if (runBtn) {
     runBtn.addEventListener("click", () => {
       void runInfraConnectionTest();
+    });
+  }
+  if (applyBtn) {
+    applyBtn.addEventListener("click", () => {
+      applyAiRecommendation(infraState.activeTarget, {
+        markConfigured: true,
+        showMessage: true,
+      });
+    });
+  }
+  if (tuneBtn) {
+    tuneBtn.addEventListener("click", () => {
+      void runAiTuning();
+    });
+  }
+  if (autoTuneBtn) {
+    autoTuneBtn.addEventListener("click", () => {
+      infraState.aiAutoTune = !infraState.aiAutoTune;
+      renderAiCopilot(infraState.activeTarget);
     });
   }
 }

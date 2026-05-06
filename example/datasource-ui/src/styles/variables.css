@@ -20,24 +20,40 @@
   --color-warning: #ffc173;
   --color-info: #7bcfff;
 
+  --el-color-primary: var(--color-primary);
+  --el-color-success: var(--color-success);
+  --el-color-warning: var(--color-warning);
+  --el-color-danger: var(--color-error);
+  --el-color-info: var(--color-info);
+  --el-text-color-primary: var(--color-text);
+  --el-text-color-regular: var(--color-text-secondary);
+  --el-text-color-secondary: var(--color-text-muted);
+  --el-border-color: var(--color-border);
+  --el-bg-color: rgba(15, 28, 41, 0.96);
+  --el-bg-color-page: transparent;
+  --el-fill-color-blank: rgba(15, 28, 41, 0.9);
+
   --color-kafka: #f28a5d;
   --color-mysql: #6abed7;
   --color-redis: #ff816e;
   --color-excel: #76d39c;
 
-  --radius-sm: 10px;
-  --radius-md: 16px;
-  --radius-lg: 24px;
-  --radius-xl: 32px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
 
-  --font-mono: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace;
-  --font-sans: 'Aptos', 'Segoe UI Variable Text', 'Segoe UI', 'Trebuchet MS', sans-serif;
-  --font-display: 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
+  --font-mono: "JetBrains Mono", "Cascadia Code", "Fira Code", monospace;
+  --font-sans:
+    "Aptos", "Segoe UI Variable Text", "Segoe UI", "Trebuchet MS", sans-serif;
+  --font-display: "Palatino Linotype", "Book Antiqua", Georgia, serif;
 
-  --shadow-sm: 0 12px 30px rgba(0, 0, 0, 0.18);
-  --shadow-md: 0 18px 48px rgba(0, 0, 0, 0.26);
-  --shadow-lg: 0 30px 80px rgba(0, 0, 0, 0.34);
-  --shadow-glow: 0 0 0 1px rgba(225, 191, 120, 0.08), 0 18px 48px rgba(225, 191, 120, 0.08);
+  --shadow-sm: 0 8px 24px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(0, 0, 0, 0.12);
+  --shadow-md: 0 16px 48px rgba(0, 0, 0, 0.28), 0 4px 16px rgba(0, 0, 0, 0.16);
+  --shadow-lg: 0 24px 64px rgba(0, 0, 0, 0.36), 0 8px 24px rgba(0, 0, 0, 0.2);
+  --shadow-glow:
+    0 0 0 1px rgba(225, 191, 120, 0.1), 0 12px 40px rgba(225, 191, 120, 0.1),
+    0 0 20px rgba(225, 191, 120, 0.05);
 
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-smooth: cubic-bezier(0.2, 0.8, 0.2, 1);

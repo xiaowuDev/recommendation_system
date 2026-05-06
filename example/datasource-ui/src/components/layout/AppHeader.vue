@@ -66,7 +66,10 @@ const navItems = computed(() => [
   position: sticky;
   top: 0;
   z-index: 20;
-  padding: 18px 24px 0;
+  padding: 18px 32px 0;
+  max-width: 1744px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .app-header {

@@ -4,23 +4,40 @@ server:
 spring:
   application:
     name: example-learning-module
+  ai:
+    model:
+      chat: ${SPRING_AI_MODEL_CHAT:openai}
+    openai:
+      api-key: ${OPENAI_API_KEY:sk-DidO8powduqKY1WOQI0WgGQoZOIZb8ZUp9Z3U3s3CEkxcRIJ}
+      base-url: ${OPENAI_BASE_URL:https://api.kksj.org}
+      chat:
+        options:
+          model: ${OPENAI_CHAT_MODEL:deepseek-v3.2}
+          temperature: ${OPENAI_CHAT_TEMPERATURE:0.2}
+          max-tokens: ${OPENAI_CHAT_MAX_TOKENS:4000}
+    chat:
+      client:
+        enabled: true
+      memory:
+        repository:
+          jdbc:
+            initialize-schema: always
+            platform: mysql
+            schema: classpath:schema-chat-memory-mysql.sql
   datasource:
-    url: jdbc:h2:mem:exampledb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://127.0.0.1:3306/recommendation_system_example?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=UTF-8&connectionCollation=utf8mb4_unicode_ci&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:root}
     hikari:
       maximum-pool-size: 30
       minimum-idle: 5
       connection-timeout: 30000
       idle-timeout: 600000
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
   sql:
     init:
       mode: always
+      continue-on-error: true
       schema-locations: classpath:sql/schema.sql
       data-locations: classpath:sql/data.sql
   kafka:

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import AppHeader from './AppHeader.vue'
+import AppHeader from "./AppHeader.vue";
 </script>
 
 <template>
@@ -65,12 +65,18 @@ import AppHeader from './AppHeader.vue'
 .app-main {
   flex: 1;
   width: 100%;
-  padding: 28px 24px 40px;
+  padding: 24px 32px 36px;
 }
 
 .content-shell {
-  max-width: 1260px;
+  max-width: 1680px;
   margin: 0 auto;
+}
+
+@media (max-width: 1920px) {
+  .app-main {
+    padding: 24px 28px 36px;
+  }
 }
 
 @media (max-width: 640px) {

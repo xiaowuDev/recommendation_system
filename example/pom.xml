@@ -32,6 +32,10 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
+        <dependency>
+            <groupId>jakarta.annotation</groupId>
+            <artifactId>jakarta.annotation-api</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -43,9 +47,30 @@
             <artifactId>spring-boot-starter-jdbc</artifactId>
         </dependency>
 
+        <!--
+          Kafka_Idempotent_Demo 使用 JPA 实体（@Entity / @Id / @Table）
+          和 JpaRepository 实现双层幂等的 DB 兜底层。
+          starter-data-jpa 会传递依赖 jakarta.persistence-api + hibernate-core + spring-data-jpa，
+          一次解决"注解 + 实现 + Repository"三件套。
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-model-openai</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-model-chat-memory-repository-jdbc</artifactId>
         </dependency>
 
         <dependency>
@@ -80,7 +105,7 @@
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
-            <scope>runtime</scope>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -121,6 +146,9 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
                     <release>${java.version}</release>
+                    <compilerArgs>
+                        <arg>-parameters</arg>
+                    </compilerArgs>
                     <annotationProcessorPaths>
                         <path>
                             <groupId>org.projectlombok</groupId>
